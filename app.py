@@ -13,7 +13,58 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_curve, auc
 import warnings
+import os
+import requests
+import zipfile
 warnings.filterwarnings('ignore')
+
+# ==================== 数据自动下载配置 ====================
+DATA_DIR = 'data'
+RELEASE_URL = 'https://github.com/hjl-beautiful/consumption-analysis-v2/releases/download/v1.0.0'
+
+DATA_FILES = {
+    'OnlineRetail_cleaned.zip': f'{RELEASE_URL}/OnlineRetail_cleaned.zip',
+    'rfm_results.csv': f'{RELEASE_URL}/rfm_results.csv',
+    'segment_summary.csv': f'{RELEASE_URL}/segment_summary.csv',
+    'models.zip': f'{RELEASE_URL}/models.zip',
+}
+
+def ensure_data_files():
+    """确保所有数据文件都已下载"""
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    for filename, url in DATA_FILES.items():
+        local_path = os.path.join(DATA_DIR, filename)
+
+        if os.path.exists(local_path):
+            continue
+
+        with st.spinner(f'正在下载 {filename}...'):
+            try:
+                response = requests.get(url, timeout=120)
+                response.raise_for_status()
+
+                with open(local_path, 'wb') as f:
+                    f.write(response.content)
+
+                # 如果是ZIP文件，解压
+                if filename.endswith('.zip'):
+                    with zipfile.ZipFile(local_path, 'r') as zip_ref:
+                        zip_ref.extractall(DATA_DIR)
+                    st.success(f'{filename} 下载并解压完成！')
+                else:
+                    st.success(f'{filename} 下载完成！')
+
+            except Exception as e:
+                st.error(f'下载 {filename} 失败: {e}')
+                return False
+
+    return True
+
+# 启动时自动下载数据
+if not ensure_data_files():
+    st.error("数据文件下载失败，请检查网络连接")
+    st.stop()
 
 # ==================== 修复中文显示 ====================
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
@@ -84,19 +135,13 @@ st.markdown("""
 # ==================== 加载数据 ====================
 @st.cache_data
 def load_data():
-    df = pd.read_csv('data/OnlineRetail_cleaned.csv', parse_dates=['InvoiceDate'])
+    df = pd.read_parquet('data/OnlineRetail_cleaned.parquet')
+    # 转换日期列
+    if 'InvoiceDate' in df.columns:
+        df['InvoiceDate'] = pd.to_datetime(df['InvoiceDate'])
     rfm = pd.read_csv('data/rfm_results.csv')
     return df, rfm
 
-try:
-    df, rfm = load_data()
-    data_loaded = True
-except Exception as e:
-    st.error(f"数据加载失败：{e}")
-    st.info("请确保已运行Day 1-3的代码生成数据文件")
-    data_loaded = False
-
-if data_loaded:
     # ==================== 页面标题 ====================
     st.markdown('<div class="main-title">电商用户消费行为分析系统</div>', unsafe_allow_html=True)
     st.markdown('<div class="main-subtitle">基于RFM模型与机器学习的用户价值洞察平台 | UCI Online Retail Dataset</div>', unsafe_allow_html=True)
