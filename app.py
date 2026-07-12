@@ -13,58 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_curve, auc
 import warnings
-import os
-import requests
-import zipfile
 warnings.filterwarnings('ignore')
-
-# ==================== 数据自动下载配置 ====================
-DATA_DIR = 'data'
-RELEASE_URL = 'https://github.com/hjl-beautiful/consumption-analysis-v2/releases/download/v1.0.0'
-
-DATA_FILES = {
-    'OnlineRetail_cleaned.zip': f'{RELEASE_URL}/OnlineRetail_cleaned.zip',
-    'rfm_results.csv': f'{RELEASE_URL}/rfm_results.csv',
-    'segment_summary.csv': f'{RELEASE_URL}/segment_summary.csv',
-    'models.zip': f'{RELEASE_URL}/models.zip',
-}
-
-def ensure_data_files():
-    """确保所有数据文件都已下载"""
-    os.makedirs(DATA_DIR, exist_ok=True)
-
-    for filename, url in DATA_FILES.items():
-        local_path = os.path.join(DATA_DIR, filename)
-
-        if os.path.exists(local_path):
-            continue
-
-        with st.spinner(f'正在下载 {filename}...'):
-            try:
-                response = requests.get(url, timeout=120)
-                response.raise_for_status()
-
-                with open(local_path, 'wb') as f:
-                    f.write(response.content)
-
-                # 如果是ZIP文件，解压
-                if filename.endswith('.zip'):
-                    with zipfile.ZipFile(local_path, 'r') as zip_ref:
-                        zip_ref.extractall(DATA_DIR)
-                    st.success(f'{filename} 下载并解压完成！')
-                else:
-                    st.success(f'{filename} 下载完成！')
-
-            except Exception as e:
-                st.error(f'下载 {filename} 失败: {e}')
-                return False
-
-    return True
-
-# 启动时自动下载数据
-if not ensure_data_files():
-    st.error("数据文件下载失败，请检查网络连接")
-    st.stop()
 
 # ==================== 修复中文显示 ====================
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
@@ -80,7 +29,6 @@ st.set_page_config(
 # 全局样式
 st.markdown("""
     <style>
-    /* 主标题 */
     .main-title {
         text-align: center;
         color: #1f4e79;
@@ -95,8 +43,6 @@ st.markdown("""
         font-size: 1rem;
         margin-bottom: 2rem;
     }
-    
-    /* 模块标题 */
     .section-title {
         color: #1f4e79;
         font-size: 1.5rem;
@@ -106,8 +52,6 @@ st.markdown("""
         border-bottom: 3px solid #667eea;
         display: inline-block;
     }
-    
-    /* 按钮样式 */
     .stButton>button {
         border-radius: 8px;
         padding: 0.5rem 1rem;
@@ -136,17 +80,25 @@ st.markdown("""
 @st.cache_data
 def load_data():
     df = pd.read_parquet('data/OnlineRetail_cleaned.parquet')
-    # 转换日期列
     if 'InvoiceDate' in df.columns:
         df['InvoiceDate'] = pd.to_datetime(df['InvoiceDate'])
     rfm = pd.read_csv('data/rfm_results.csv')
     return df, rfm
 
+try:
+    df, rfm = load_data()
+    data_loaded = True
+except Exception as e:
+    st.error(f"数据加载失败：{e}")
+    st.info("请确保数据文件已正确上传")
+    data_loaded = False
+
+if data_loaded:
     # ==================== 页面标题 ====================
     st.markdown('<div class="main-title">电商用户消费行为分析系统</div>', unsafe_allow_html=True)
     st.markdown('<div class="main-subtitle">基于RFM模型与机器学习的用户价值洞察平台 | UCI Online Retail Dataset</div>', unsafe_allow_html=True)
 
-    # ==================== 侧边栏导航（按钮式）====================
+    # ==================== 侧边栏导航 ====================
     st.sidebar.markdown("""
         <div style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; 
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -156,17 +108,14 @@ def load_data():
         </div>
     """, unsafe_allow_html=True)
 
-    # 使用 session_state 保存当前页面
     if 'current_page' not in st.session_state:
         st.session_state.current_page = "首页概览"
 
-    # 导航按钮
     nav_items = ["首页概览", "RFM分析", "K-Means聚类", "随机森林分类", "客户价值预测"]
 
     for item in nav_items:
         is_active = st.session_state.current_page == item
         btn_type = "primary" if is_active else "secondary"
-
         if st.sidebar.button(item, key=f"nav_{item}", type=btn_type, use_container_width=True):
             st.session_state.current_page = item
             st.rerun()
@@ -195,14 +144,12 @@ def load_data():
         st.markdown('<div class="section-title">核心指标看板</div>', unsafe_allow_html=True)
 
         col1, col2, col3, col4 = st.columns(4)
-
         metrics = [
             (f"{df['CustomerID'].nunique():,}", "总用户数", "#667eea"),
             (f"{df['InvoiceNo'].nunique():,}", "总订单数", "#764ba2"),
             (f"£{df['Amount'].sum()/1e6:.2f}M", "总销售额", "#f093fb"),
             (f"{df['StockCode'].nunique():,}", "商品种类", "#4facfe"),
         ]
-
         for col, (value, label, color) in zip([col1, col2, col3, col4], metrics):
             with col:
                 st.markdown(f"""
@@ -215,7 +162,6 @@ def load_data():
                 """, unsafe_allow_html=True)
 
         st.markdown('<div class="section-title">数据概览</div>', unsafe_allow_html=True)
-
         st.dataframe(
             df.head(10).style.background_gradient(cmap='Blues', subset=['Amount']),
             use_container_width=True,
@@ -223,7 +169,6 @@ def load_data():
         )
 
         col_left, col_right = st.columns(2)
-
         with col_left:
             st.markdown("""
                 <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem;">
@@ -245,17 +190,14 @@ def load_data():
     # ==================== RFM分析 ====================
     elif page == "RFM分析":
         st.markdown('<div class="section-title">RFM用户价值分析</div>', unsafe_allow_html=True)
-
         st.markdown('<h4 style="color: #555; margin: 1rem 0;">RFM指标分布</h4>', unsafe_allow_html=True)
 
         col1, col2, col3 = st.columns(3)
-
         rfm_metrics = [
             ('Recency', '最近消费天数', '#667eea'),
             ('Frequency', '消费频次', '#764ba2'),
             ('Monetary', '消费金额', '#f093fb'),
         ]
-
         for col, (metric, label, color) in zip([col1, col2, col3], rfm_metrics):
             with col:
                 st.markdown(f'<h5 style="color: {color}; text-align: center;">{label}</h5>', unsafe_allow_html=True)
@@ -274,11 +216,9 @@ def load_data():
                 st.pyplot(fig)
 
         st.divider()
-
         st.markdown('<h4 style="color: #555; margin: 1rem 0;">用户分群统计</h4>', unsafe_allow_html=True)
 
         segment_counts = rfm['Segment'].value_counts()
-
         col_chart, col_table = st.columns([3, 2])
 
         with col_chart:
@@ -305,7 +245,6 @@ def load_data():
             }).round(1)
             segment_detail.columns = ['User Count', 'Avg R', 'Avg F', 'Avg M']
             segment_detail = segment_detail.sort_values('User Count', ascending=False)
-
             st.dataframe(
                 segment_detail.style.background_gradient(cmap='YlOrRd', subset=['User Count']),
                 use_container_width=True,
@@ -315,7 +254,6 @@ def load_data():
     # ==================== K-Means聚类 ====================
     elif page == "K-Means聚类":
         st.markdown('<div class="section-title">K-Means智能分群</div>', unsafe_allow_html=True)
-
         st.markdown("""
             <div style="background: #f0f4ff; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
                 <h4 style="color: #1f4e79; margin-bottom: 1rem;">聚类配置</h4>
@@ -323,7 +261,6 @@ def load_data():
         """, unsafe_allow_html=True)
 
         col_config1, col_config2 = st.columns([2, 1])
-
         with col_config1:
             selected_features = st.multiselect(
                 "选择聚类特征",
@@ -331,37 +268,31 @@ def load_data():
                 default=['Recency', 'Frequency', 'Monetary'],
                 help="建议全选以获得最佳分群效果"
             )
-
         with col_config2:
             n_clusters = st.slider("聚类数量 K", 2, 8, 4)
 
         if len(selected_features) >= 2:
             scaler = StandardScaler()
             X_scaled = scaler.fit_transform(rfm[selected_features])
-
             kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
             clusters = kmeans.fit_predict(X_scaled)
             rfm['Cluster'] = clusters
 
             st.markdown('<h4 style="color: #555; margin: 1.5rem 0 1rem;">聚类中心特征</h4>', unsafe_allow_html=True)
-
             cluster_centers = pd.DataFrame(
                 scaler.inverse_transform(kmeans.cluster_centers_),
                 columns=selected_features
             ).round(2)
             cluster_centers.index = [f'Cluster {i}' for i in range(n_clusters)]
-
             st.dataframe(
                 cluster_centers.style.background_gradient(cmap='RdYlBu_r', axis=0),
                 use_container_width=True
             )
 
             col_dist, col_viz = st.columns([1, 2])
-
             with col_dist:
                 st.markdown('<h5 style="color: #555;">各群体规模</h5>', unsafe_allow_html=True)
                 cluster_counts = pd.Series(clusters).value_counts().sort_index()
-
                 fig, ax = plt.subplots(figsize=(6, 5))
                 colors = plt.cm.Set2(np.linspace(0, 1, n_clusters))
                 wedges, texts, autotexts = ax.pie(
@@ -383,10 +314,8 @@ def load_data():
                     from sklearn.decomposition import PCA
                     pca = PCA(n_components=2)
                     pca_result = pca.fit_transform(X_scaled)
-
                     fig, ax = plt.subplots(figsize=(10, 7))
                     colors = plt.cm.Set2(np.linspace(0, 1, n_clusters))
-
                     for i in range(n_clusters):
                         mask = clusters == i
                         ax.scatter(
@@ -399,7 +328,6 @@ def load_data():
                             edgecolors='white',
                             linewidth=0.5
                         )
-
                     ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%})', fontsize=11)
                     ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%})', fontsize=11)
                     ax.set_title('K-Means Clustering (PCA)', fontsize=13, color='#333', pad=15)
@@ -408,7 +336,6 @@ def load_data():
                     ax.spines['right'].set_visible(False)
                     ax.grid(True, alpha=0.3)
                     st.pyplot(fig)
-
                     st.info(f"累计方差解释率: {sum(pca.explained_variance_ratio_):.1%}")
         else:
             st.warning("请至少选择2个特征进行聚类分析")
@@ -416,7 +343,6 @@ def load_data():
     # ==================== 随机森林分类 ====================
     elif page == "随机森林分类":
         st.markdown('<div class="section-title">随机森林高价值客户预测</div>', unsafe_allow_html=True)
-
         st.markdown("""
             <div style="background: #f0fff4; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
                 <h4 style="color: #1f4e79; margin-bottom: 1rem;">模型配置</h4>
@@ -433,13 +359,11 @@ def load_data():
         rfm['AvgOrderValue'] = rfm['Monetary'] / (rfm['Frequency'] + 1)
         rfm['R_F_Ratio'] = rfm['Recency'] / (rfm['Frequency'] + 1)
         rfm['M_F_Ratio'] = rfm['Monetary'] / (rfm['Frequency'] + 1)
-
         rfm['ValueScore'] = rfm['R_Score'] + rfm['F_Score'] + rfm['M_Score']
         rfm['IsHighValue'] = (rfm['ValueScore'] >= rfm['ValueScore'].quantile(0.8)).astype(int)
 
         X = rfm[feature_cols]
         y = rfm['IsHighValue']
-
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=test_size, random_state=42, stratify=y
         )
@@ -466,7 +390,6 @@ def load_data():
         roc_auc = auc(fpr, tpr)
 
         st.markdown('<h4 style="color: #555; margin: 1.5rem 0 1rem;">模型性能</h4>', unsafe_allow_html=True)
-
         col_m1, col_m2, col_m3 = st.columns(3)
         metrics_display = [
             (f"{acc*100:.2f}%", "准确率", "#667eea"),
@@ -485,14 +408,12 @@ def load_data():
                 """, unsafe_allow_html=True)
 
         col_viz1, col_viz2 = st.columns(2)
-
         with col_viz1:
             st.markdown('<h5 style="color: #555;">特征重要性</h5>', unsafe_allow_html=True)
             importance_df = pd.DataFrame({
                 'feature': feature_cols,
                 'importance': rf.feature_importances_
             }).sort_values('importance', ascending=True)
-
             fig, ax = plt.subplots(figsize=(8, 5))
             colors = plt.cm.RdYlGn(np.linspace(0.2, 0.8, len(importance_df)))
             bars = ax.barh(importance_df['feature'], importance_df['importance'], color=colors)
@@ -508,7 +429,6 @@ def load_data():
         with col_viz2:
             st.markdown('<h5 style="color: #555;">混淆矩阵</h5>', unsafe_allow_html=True)
             cm = confusion_matrix(y_test, y_pred)
-
             fig, ax = plt.subplots(figsize=(7, 6))
             sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
                        xticklabels=['Normal', 'High Value'],
@@ -522,7 +442,6 @@ def load_data():
     # ==================== 客户价值预测 ====================
     elif page == "客户价值预测":
         st.markdown('<div class="section-title">智能客户价值预测</div>', unsafe_allow_html=True)
-
         st.markdown("""
             <div style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); 
                         border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem;">
@@ -531,19 +450,15 @@ def load_data():
         """, unsafe_allow_html=True)
 
         st.markdown('<h4 style="color: #1f4e79; margin-bottom: 1rem;">客户信息录入</h4>', unsafe_allow_html=True)
-
         col1, col2, col3 = st.columns(3)
-
         with col1:
             st.markdown('<div style="text-align: center; color: #667eea; font-weight: 600;">Recency</div>', unsafe_allow_html=True)
             recency = st.number_input("最近消费天数", min_value=0, max_value=500, value=30,
                                      help="距离上次消费的天数，越小越好")
-
         with col2:
             st.markdown('<div style="text-align: center; color: #764ba2; font-weight: 600;">Frequency</div>', unsafe_allow_html=True)
             frequency = st.number_input("消费频次", min_value=1, max_value=100, value=5,
                                         help="累计消费次数")
-
         with col3:
             st.markdown('<div style="text-align: center; color: #f093fb; font-weight: 600;">Monetary</div>', unsafe_allow_html=True)
             monetary = st.number_input("消费金额 (£)", min_value=0.0, max_value=100000.0, value=2000.0,
@@ -575,7 +490,6 @@ def load_data():
                         <p style="color: #888; font-size: 1.1rem;">VIP级别 | 重点维护对象</p>
                     </div>
                 """, unsafe_allow_html=True)
-
                 col_r1, col_r2 = st.columns(2)
                 with col_r1:
                     st.metric("RFM综合评分", f"{value_score}/15")
@@ -583,7 +497,6 @@ def load_data():
                 with col_r2:
                     st.metric("消费频次", f"{frequency} 次")
                     st.metric("最近消费", f"{recency} 天前")
-
                 st.success("""
                 运营建议：
                 - 提供专属VIP客服通道
@@ -600,7 +513,6 @@ def load_data():
                         <p style="color: #888; font-size: 1.1rem;">成长型 | 提升空间巨大</p>
                     </div>
                 """, unsafe_allow_html=True)
-
                 col_r1, col_r2 = st.columns(2)
                 with col_r1:
                     st.metric("RFM综合评分", f"{value_score}/15")
@@ -608,7 +520,6 @@ def load_data():
                 with col_r2:
                     st.metric("消费频次", f"{frequency} 次")
                     st.metric("最近消费", f"{recency} 天前")
-
                 st.info("""
                 运营建议：
                 - 发送复购优惠券刺激消费
@@ -625,7 +536,6 @@ def load_data():
                         <p style="color: #888; font-size: 1.1rem;">基础型 | 需激活唤醒</p>
                     </div>
                 """, unsafe_allow_html=True)
-
                 col_r1, col_r2 = st.columns(2)
                 with col_r1:
                     st.metric("RFM综合评分", f"{value_score}/15")
@@ -633,7 +543,6 @@ def load_data():
                 with col_r2:
                     st.metric("消费频次", f"{frequency} 次")
                     st.metric("最近消费", f"{recency} 天前")
-
                 st.warning("""
                 运营建议：
                 - 大额满减券吸引首单/复购
@@ -641,6 +550,3 @@ def load_data():
                 - 新人专享福利重新激活
                 - 短信/推送召回沉睡用户
                 """)
-
-else:
-    st.stop()
