@@ -1,5 +1,5 @@
 """
-Day 3: 随机森林分类
+随机森林分类模块
 目标：基于RFM特征预测用户是否为高价值客户，训练可解释的分类模型
 """
 import matplotlib
@@ -20,7 +20,7 @@ plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 print("=" * 60)
-print(" 电商用户消费行为分析 - Day 3: 随机森林分类")
+print(" 电商用户消费行为分析 - 随机森林分类模块")
 print("=" * 60)
 
 # ==================== 1. 加载RFM数据 ====================
@@ -191,5 +191,5 @@ print(f" 特征重要性排名:")
 for idx, row in importance_df.iterrows():
     print(f"   {row['feature']}: {row['importance']:.3f}")
 print("=" * 60)
-print(" Day 3 完成！随机森林模型已保存，准备进入 Day 4: Streamlit部署")
+print(" 随机森林分类完成！随机森林模型已保存，准备进入 Streamlit 部署")
 print("=" * 60)

@@ -1,5 +1,5 @@
 """
-Day 1: 数据清洗与预处理
+数据清洗与预处理模块
 目标：将原始交易数据清洗为可用于RFM分析和建模的干净数据
 """
 
@@ -17,7 +17,7 @@ plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 print("=" * 60)
-print("电商用户消费行为分析 - Day 1: 数据清洗")
+print("电商用户消费行为分析 - 数据清洗")
 print("=" * 60)
 
 # ==================== 1. 加载数据 ====================
@@ -187,5 +187,5 @@ print(f" 平均客单价: £{df['Amount'].mean():.2f}")
 print(f" 数据时间跨度: {(df['InvoiceDate'].max() - df['InvoiceDate'].min()).days} 天")
 print(f" 覆盖国家数: {df['Country'].nunique()}")
 print("=" * 60)
-print(" Day 1 完成！清洗后的数据已保存，准备进入 Day 2: RFM分析")
+print(" 数据清洗完成！清洗后的数据已保存，准备进入 RFM 分析")
 print("=" * 60)

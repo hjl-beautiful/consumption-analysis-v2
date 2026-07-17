@@ -1,5 +1,5 @@
 """
-Day 2: RFM分析
+RFM 分析模块
 目标：基于RFM模型对用户进行分群，识别高价值用户
 """
 import matplotlib
@@ -19,7 +19,7 @@ plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 print("=" * 60)
-print(" 电商用户消费行为分析 - Day 2: RFM分析")
+print(" 电商用户消费行为分析 - RFM 分析模块")
 print("=" * 60)
 
 # ==================== 1. 加载清洗后的数据 ====================
@@ -210,5 +210,5 @@ print(f" 平均消费频次: {rfm['Frequency'].mean():.2f} 次")
 print(f"\n 高价值客户占比: {(rfm['Segment'] == '重要价值客户').mean()*100:.1f}%")
 print(f" 沉睡客户占比: {(rfm['Segment'] == '低价值客户').mean()*100:.1f}%")
 print("=" * 60)
-print(" Day 2 完成！RFM分析结果已保存，准备进入 Day 3: 随机森林分类")
+print(" RFM 分析完成！RFM分析结果已保存，准备进入随机森林分类")
 print("=" * 60)

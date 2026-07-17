@@ -1,5 +1,6 @@
 """
-Day 4: Streamlit部署（美化版 - 按钮导航）
+电商用户消费行为分析系统 — Streamlit 可视化部署
+基于 UCI Online Retail 数据集，完成数据清洗、RFM 分析、K-Means 聚类与随机森林分类
 """
 
 import streamlit as st
