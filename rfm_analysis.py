@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, calinski_harabasz_score
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -115,6 +116,21 @@ rfm_scaled = scaler.fit_transform(rfm[['Recency', 'Frequency', 'Monetary']])
 # K-Means聚类（K=4）
 kmeans = KMeans(n_clusters=4, random_state=42, n_init=10)
 rfm['Cluster'] = kmeans.fit_predict(rfm_scaled)
+
+# 聚类评估指标（无监督学习用轮廓系数和CH指数，不用准确率）
+silhouette = silhouette_score(rfm_scaled, rfm['Cluster'])
+ch_score = calinski_harabasz_score(rfm_scaled, rfm['Cluster'])
+print(f" 轮廓系数 (Silhouette Score): {silhouette:.4f}  [范围 -1~1，越接近1越好]")
+print(f" CH 指数 (Calinski-Harabasz): {ch_score:.2f}  [越大越好]")
+
+# 肘部法则验证 K 值选择
+inertias = []
+for k in range(2, 9):
+    km = KMeans(n_clusters=k, random_state=42, n_init=10)
+    km.fit_predict(rfm_scaled)
+    inertias.append(km.inertia_)
+print(f" 肘部法则 SSE 序列(K=2~8): {[round(x, 2) for x in inertias]}")
+print(f" 选定 K=4 (SSE={kmeans.inertia_:.2f})")
 
 # 聚类结果分析
 cluster_analysis = rfm.groupby('Cluster').agg({
