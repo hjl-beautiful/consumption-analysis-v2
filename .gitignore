@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 数据文件（大文件不提交到 git，README 里有下载说明）
+data/OnlineRetail_cleaned.csv
+data/Online Retail.xlsx
+data/OnlineRetail_cleaned.parquet
+data/OnlineRetail_cleaned.zip
+data/*.pkl
+data/*.zip
+data/models.zip
+
+# 图片文件（可选，保留 eda_overview.png 等必要图片）
+# data/*.png
+
+# 输出结果
+output/
+
+# 临时文件
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
