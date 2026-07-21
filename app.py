@@ -164,7 +164,7 @@ if data_loaded:
 
         st.markdown('<div class="section-title">数据概览</div>', unsafe_allow_html=True)
         st.dataframe(
-            df.head(10).style.background_gradient(cmap='Blues', subset=['Amount']),
+            df.head(10).style.format(precision=2).background_gradient(cmap='Blues', subset=['Amount']),
             use_container_width=True,
             height=400
         )
