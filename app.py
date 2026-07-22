@@ -16,9 +16,8 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_curv
 import warnings
 warnings.filterwarnings('ignore')
 
-# ==================== 修复中文显示 ====================
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
-plt.rcParams['axes.unicode_minus'] = False
+# ==================== 修复中文显示（matplotlib-fontja，跨平台含 Streamlit Cloud） ====================
+import matplotlib_fontja  # 自动注入 IPAexGothic，无需其他配置
 
 # 设置页面
 st.set_page_config(
