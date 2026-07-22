@@ -16,8 +16,15 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_curv
 import warnings
 warnings.filterwarnings('ignore')
 
-# ==================== 修复中文显示（matplotlib-fontja，跨平台含 Streamlit Cloud） ====================
-import matplotlib_fontja  # 自动注入 IPAexGothic，无需其他配置
+# ==================== 修复中文显示（项目内微软雅黑，跨环境零下载） ====================
+import os
+from matplotlib import font_manager
+_font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'msyh.ttc')
+if os.path.exists(_font_path):
+    font_manager.fontManager.addfont(_font_path)
+    _prop = font_manager.FontProperties(fname=_font_path)
+    plt.rcParams['font.sans-serif'] = [_prop.get_name()]
+plt.rcParams['axes.unicode_minus'] = False
 
 # 设置页面
 st.set_page_config(
@@ -234,6 +241,8 @@ if data_loaded:
             for bar, val in zip(bars, segment_counts.values[::-1]):
                 ax.text(bar.get_width() + 20, bar.get_y() + bar.get_height()/2,
                        f'{val} ({val/len(rfm)*100:.1f}%)', va='center', fontsize=9)
+            # 右侧留 20% 空间给数字标签，避免被裁切
+            ax.set_xlim(0, segment_counts.max() * 1.20)
             st.pyplot(fig)
 
         with col_table:

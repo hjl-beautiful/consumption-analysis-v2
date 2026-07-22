@@ -6,4 +6,3 @@ seaborn
 scikit-learn
 joblib
 pyarrow
-matplotlib-fontja
